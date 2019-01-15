@@ -117,7 +117,9 @@ router.get(
   }),
   (req, res) => {
     res.json({
-      msg: "Success"
+      id: req.user.id,
+      name: req.user.name,
+      email: req.user.email
     });
   })
 
