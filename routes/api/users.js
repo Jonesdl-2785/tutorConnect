@@ -6,6 +6,9 @@ const jwt = require('jsonwebtoken');
 const keys = require('../../config/keys');
 const passport = require('passport')
 
+// Input Validation
+const validateRegisterInput = require('../../validation/register');
+
 // User model
 const User = require('../../models/User');
 
@@ -17,18 +20,23 @@ router.get('/test', (req, res) => res.json({
   msg: "Users is working"
 }));
 
-// @route   GET api/users/register
+// @route   POST api/users/register
 // @desc    Register users
 // @access  Public route
 router.post('/register', (req, res) => {
+const { errors, isValid } = validateRegisterInput(req.body);
+
+// Validation
+if (!isValid) {
+  return res.status(400).json(errors);
+}
   User.findOne({
       email: req.body.email
     })
     .then(user => {
       if (user) {
-        return res.status(400).json({
-          email: 'Email already on file.'
-        });
+        errors.email = 'Email already in use';
+        return res.status(400).json(errors);
       } else {
         const avatar = gravatar.url(req.body.email, {
           s: '200', // Size
@@ -57,12 +65,12 @@ router.post('/register', (req, res) => {
 });
 
 // @route   POST api/users/login
-// @desc    Login user and Return JWT token 
+// @desc    Login user and Return JWT token
 // @access  Public route
 router.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  
+
   // Get user by email
   User.findOne({
       email: email
@@ -80,14 +88,14 @@ router.post('/login', (req, res) => {
           if (isMatch) {
             // User Matched
 
-            // Create jwt payload  
+            // Create jwt payload
             const payload = {
               id: user.id,
               name: user.name,
               avatar: user.avatar
             }
 
-            // Sign token 
+            // Sign token
             // https://github.com/auth0/node-jsonwebtoken
             jwt.sign(payload, keys.secretOrKey, {
                 expiresIn: 3600
@@ -96,7 +104,7 @@ router.post('/login', (req, res) => {
                 res.json({
                   success: true,
                   token: 'Bearer ' + token
-                })
+                });
               });
           } else {
             return res.status(400).json({
@@ -121,6 +129,6 @@ router.get(
       name: req.user.name,
       email: req.user.email
     });
-  })
+  });
 
 module.exports = router;
